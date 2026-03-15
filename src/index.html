@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPC Studio</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div class="hero-top">
+          <p class="eyebrow" data-i18n="eyebrow">Discord Rich Presence</p>
+          <div class="lang-switch">
+            <label for="lang-select" data-i18n="language_label">Language</label>
+            <select id="lang-select">
+              <option value="en">EN</option>
+              <option value="sl">SI</option>
+            </select>
+          </div>
+        </div>
+
+        <h1>RPC Studio</h1>
+        <p class="subtitle" data-i18n="subtitle">
+          Set custom details, state, and image assets for your local Discord
+          desktop session.
+        </p>
+      </section>
+
+      <section class="card">
+        <label data-i18n="behavior_title">App Behavior</label>
+        <div class="behavior-row">
+          <label class="toggle">
+            <input id="autostart-toggle" type="checkbox" />
+            <span data-i18n="autostart_label">Launch on system startup</span>
+          </label>
+        </div>
+        <p class="hint" data-i18n="tray_hint">
+          Closing the window with X keeps the app running in the tray/menu bar.
+        </p>
+      </section>
+
+      <section class="card">
+        <label for="profile-name" data-i18n="profiles_title">Profiles</label>
+        <div class="profile-row">
+          <select id="profile-select"></select>
+          <input
+            id="profile-name"
+            placeholder="Profile name"
+            data-i18n-placeholder="profile_name_placeholder"
+          />
+          <button id="save-profile-btn" data-i18n="save_profile_btn">
+            Save Profile
+          </button>
+          <button id="load-profile-btn" class="ghost" data-i18n="load_profile_btn">
+            Load
+          </button>
+          <button
+            id="delete-profile-btn"
+            class="ghost danger"
+            data-i18n="delete_profile_btn"
+          >
+            Delete
+          </button>
+        </div>
+        <p class="hint" data-i18n="profiles_hint">
+          Save and load your full RPC setup with one click.
+        </p>
+      </section>
+
+      <section class="card">
+        <label data-i18n="quick_slots_title">Quick Slots (A/B/C)</label>
+        <div class="slot-grid">
+          <div class="slot-row">
+            <span class="slot-label">A</span>
+            <span id="slot-a-name" class="slot-name">-</span>
+            <button id="assign-slot-a-btn" class="ghost" data-i18n="assign_slot_btn">
+              Assign
+            </button>
+            <button id="run-slot-a-btn" data-i18n="run_slot_btn">Run</button>
+          </div>
+          <div class="slot-row">
+            <span class="slot-label">B</span>
+            <span id="slot-b-name" class="slot-name">-</span>
+            <button id="assign-slot-b-btn" class="ghost" data-i18n="assign_slot_btn">
+              Assign
+            </button>
+            <button id="run-slot-b-btn" data-i18n="run_slot_btn">Run</button>
+          </div>
+          <div class="slot-row">
+            <span class="slot-label">C</span>
+            <span id="slot-c-name" class="slot-name">-</span>
+            <button id="assign-slot-c-btn" class="ghost" data-i18n="assign_slot_btn">
+              Assign
+            </button>
+            <button id="run-slot-c-btn" data-i18n="run_slot_btn">Run</button>
+          </div>
+        </div>
+        <p class="hint" data-i18n="quick_slots_hint">
+          Pick a profile, assign it to A/B/C, then run it in one click.
+        </p>
+      </section>
+
+      <section class="card">
+        <label for="client-id" data-i18n="client_id_label">Application Client ID</label>
+        <div class="inline">
+          <input
+            id="client-id"
+            placeholder="123456789012345678"
+            autocomplete="off"
+            data-i18n-placeholder="client_id_placeholder"
+          />
+          <button id="connect-btn" data-i18n="connect_btn">Connect</button>
+          <button id="disconnect-btn" class="ghost" data-i18n="disconnect_btn">
+            Disconnect
+          </button>
+          <button
+            id="disconnect-all-btn"
+            class="ghost danger"
+            data-i18n="disconnect_all_btn"
+          >
+            Disconnect All
+          </button>
+        </div>
+        <p class="hint" data-i18n="client_hint">
+          The app name shown in Discord (for example "RCP+") comes from this
+          Client ID app in Developer Portal.
+        </p>
+        <p class="hint">
+          <span data-i18n="connected_sessions_label">Connected sessions:</span>
+          <span id="connected-sessions">None</span>
+        </p>
+      </section>
+
+      <details class="card table-panel" open>
+        <summary data-i18n="status_table">Status Table</summary>
+        <div class="table-wrap">
+          <table class="status-table">
+            <thead>
+              <tr>
+                <th data-i18n="field_column">Field</th>
+                <th data-i18n="value_column">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="field-name" data-i18n="row_activity_type">Activity Type</td>
+                <td>
+                  <select id="activity-type">
+                    <option value="playing" data-i18n="activity_playing">Playing</option>
+                    <option value="watching" data-i18n="activity_watching">Watching</option>
+                    <option value="listening" data-i18n="activity_listening">Listening</option>
+                    <option value="competing" data-i18n="activity_competing">Competing</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_details">Details</td>
+                <td>
+                  <input
+                    id="details"
+                    placeholder="In RPC Studio"
+                    data-i18n-placeholder="details_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_state">State</td>
+                <td>
+                  <input
+                    id="state"
+                    placeholder="Building sniper update"
+                    data-i18n-placeholder="state_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_large_image">Large Image (Asset Key or URL)</td>
+                <td>
+                  <input
+                    id="large-image-key"
+                    placeholder="logo or https://..."
+                    data-i18n-placeholder="large_image_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_large_text">Large Image Text</td>
+                <td>
+                  <input
+                    id="large-image-text"
+                    placeholder="RPC Studio"
+                    data-i18n-placeholder="large_text_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_large_click">Large Image Click URL (Button)</td>
+                <td class="double">
+                  <input
+                    id="large-image-link-label"
+                    placeholder="Open Large Image"
+                    data-i18n-placeholder="large_click_label_placeholder"
+                  />
+                  <input
+                    id="large-image-link-url"
+                    placeholder="https://..."
+                    data-i18n-placeholder="url_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_small_image">Small Image (Asset Key or URL)</td>
+                <td>
+                  <input
+                    id="small-image-key"
+                    placeholder="sniper or https://..."
+                    data-i18n-placeholder="small_image_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_small_text">Small Image Text</td>
+                <td>
+                  <input
+                    id="small-image-text"
+                    placeholder="Scoped"
+                    data-i18n-placeholder="small_text_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_small_click">Small Image Click URL (Button)</td>
+                <td class="double">
+                  <input
+                    id="small-image-link-label"
+                    placeholder="Open Small Image"
+                    data-i18n-placeholder="small_click_label_placeholder"
+                  />
+                  <input
+                    id="small-image-link-url"
+                    placeholder="https://..."
+                    data-i18n-placeholder="url_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_start_elapsed">Start At (elapsed)</td>
+                <td>
+                  <div class="double">
+                    <input
+                      id="start-elapsed-hours"
+                      placeholder="hours (e.g. 5)"
+                      data-i18n-placeholder="hours_placeholder"
+                    />
+                    <input
+                      id="start-elapsed-minutes"
+                      placeholder="minutes (e.g. 22)"
+                      data-i18n-placeholder="minutes_placeholder"
+                    />
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_start_manual">Start Timestamp (manual)</td>
+                <td>
+                  <input
+                    id="start-timestamp"
+                    placeholder="unix seconds (optional)"
+                    data-i18n-placeholder="timestamp_placeholder"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td class="field-name" data-i18n="row_end">End Timestamp</td>
+                <td>
+                  <input
+                    id="end-timestamp"
+                    placeholder="unix seconds (optional)"
+                    data-i18n-placeholder="timestamp_placeholder"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <section class="card controls">
+        <button id="apply-btn" data-i18n="apply_btn">Apply Presence</button>
+        <button id="clear-btn" class="ghost" data-i18n="clear_btn">Clear Presence</button>
+      </section>
+
+      <p id="status" class="status">Disconnected.</p>
+    </main>
+  </body>
+</html>
