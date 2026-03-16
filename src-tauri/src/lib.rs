@@ -131,6 +131,11 @@ fn autostart_set_enabled(enabled: bool, app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn app_version(app: AppHandle) -> String {
+    app.package_info().version.to_string()
+}
+
+#[tauri::command]
 fn rpc_connect(client_id: String, rpc_state: tauri::State<RpcState>) -> Result<(), String> {
     let id = normalize_id(client_id)?;
 
@@ -318,6 +323,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             create_tray(&app.handle())?;
 
@@ -342,6 +348,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            app_version,
             autostart_is_enabled,
             autostart_set_enabled,
             rpc_connect,

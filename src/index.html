@@ -13,12 +13,18 @@
       <section class="hero">
         <div class="hero-top">
           <p class="eyebrow" data-i18n="eyebrow">Discord Rich Presence</p>
-          <div class="lang-switch">
-            <label for="lang-select" data-i18n="language_label">Language</label>
-            <select id="lang-select">
-              <option value="en">EN</option>
-              <option value="sl">SI</option>
-            </select>
+          <div class="lang-meta">
+            <div class="lang-switch">
+              <label for="lang-select" data-i18n="language_label">Language</label>
+              <select id="lang-select">
+                <option value="en">EN</option>
+                <option value="sl">SI</option>
+              </select>
+            </div>
+            <p class="version-chip">
+              <span data-i18n="version_label">Version</span>
+              <span id="app-version">-</span>
+            </p>
           </div>
         </div>
 
@@ -39,6 +45,22 @@
         </div>
         <p class="hint" data-i18n="tray_hint">
           Closing the window with X keeps the app running in the tray/menu bar.
+        </p>
+      </section>
+
+      <section class="card">
+        <label data-i18n="updates_title">Updates</label>
+        <p class="hint compact">
+          <span data-i18n="current_version_label">Current version:</span>
+          <span id="current-version">-</span>
+        </p>
+        <div class="inline update-inline">
+          <button id="check-updates-btn" class="ghost" data-i18n="check_updates_btn">
+            Check & Install Update
+          </button>
+        </div>
+        <p id="update-status" class="hint" data-i18n="update_idle">
+          No update check yet.
         </p>
       </section>
 
@@ -287,6 +309,86 @@
           </table>
         </div>
       </details>
+
+      <section class="card">
+        <label data-i18n="preview_title">Rich Preview</label>
+        <p class="hint" data-i18n="preview_hint">
+          Live local preview of how your card will look before applying presence.
+        </p>
+        <article class="preview-frame">
+          <div class="preview-media">
+            <div class="preview-large-wrap">
+              <img id="preview-large-image" alt="Large preview" />
+              <span id="preview-large-fallback" class="preview-fallback">No Image</span>
+              <div class="preview-small-wrap">
+                <img id="preview-small-image" alt="Small preview" />
+                <span id="preview-small-fallback" class="preview-fallback">-</span>
+              </div>
+            </div>
+          </div>
+          <div class="preview-content">
+            <p id="preview-activity-line" class="preview-activity">Playing</p>
+            <h3 id="preview-details" class="preview-details">In RPC Studio</h3>
+            <p id="preview-state" class="preview-state">Building sniper update</p>
+            <p id="preview-time" class="preview-time">00:00 elapsed</p>
+            <div id="preview-buttons" class="preview-buttons"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card">
+        <label data-i18n="validation_title">Validation Assistant</label>
+        <p class="hint" data-i18n="validation_hint">
+          Checks your setup for invalid values before sending RPC.
+        </p>
+        <div class="validation-toolbar">
+          <button id="validate-btn" class="ghost" data-i18n="validate_now_btn">
+            Validate Now
+          </button>
+          <span id="validation-summary" class="validation-summary">Ready</span>
+        </div>
+        <ul id="validation-list" class="validation-list"></ul>
+      </section>
+
+      <section class="card">
+        <label data-i18n="rotation_title">Activity Auto-Rotation</label>
+        <p class="hint" data-i18n="rotation_hint">
+          Rotate activity type automatically (safe RPC mode).
+        </p>
+        <p class="hint" data-i18n="rotation_discord_status_note">
+          Discord account status (online/idle/dnd) cannot be changed via official RPC.
+        </p>
+        <div class="rotation-grid">
+          <label class="toggle">
+            <input id="rotate-playing" type="checkbox" checked />
+            <span data-i18n="activity_playing">Playing</span>
+          </label>
+          <label class="toggle">
+            <input id="rotate-watching" type="checkbox" checked />
+            <span data-i18n="activity_watching">Watching</span>
+          </label>
+          <label class="toggle">
+            <input id="rotate-listening" type="checkbox" />
+            <span data-i18n="activity_listening">Listening</span>
+          </label>
+          <label class="toggle">
+            <input id="rotate-competing" type="checkbox" />
+            <span data-i18n="activity_competing">Competing</span>
+          </label>
+        </div>
+        <div class="inline rotation-inline">
+          <input
+            id="rotation-interval-seconds"
+            value="30"
+            data-i18n-placeholder="rotation_interval_placeholder"
+          />
+          <button id="rotation-start-btn" data-i18n="rotation_start_btn">Start Rotation</button>
+          <button id="rotation-stop-btn" class="ghost" data-i18n="rotation_stop_btn">
+            Stop
+          </button>
+        </div>
+        <p id="rotation-status" class="hint">Rotation stopped.</p>
+      </section>
 
       <section class="card controls">
         <button id="apply-btn" data-i18n="apply_btn">Apply Presence</button>

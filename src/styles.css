@@ -70,6 +70,12 @@ body {
   gap: 7px;
 }
 
+.lang-meta {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
 .lang-switch label {
   font-size: 12px;
   color: #b7c7ea;
@@ -77,6 +83,19 @@ body {
 
 .lang-switch select {
   min-width: 84px;
+}
+
+.version-chip {
+  margin: 0;
+  border: 1px solid rgb(110 137 194 / 30%);
+  background: rgb(10 17 32 / 88%);
+  color: #dce6ff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .hero h1 {
@@ -175,6 +194,10 @@ body {
   margin: 10px 0 0;
   font-size: 13px;
   color: #8ea7d7;
+}
+
+.hint.compact {
+  margin-top: 6px;
 }
 
 .controls {
@@ -282,6 +305,196 @@ select {
   gap: 8px;
 }
 
+.preview-frame {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgb(101 121 165 / 24%);
+  background: linear-gradient(150deg, rgb(20 30 56 / 55%), rgb(8 14 27 / 62%));
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: 12px;
+}
+
+.preview-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-large-wrap {
+  width: 120px;
+  height: 120px;
+  border-radius: 15px;
+  border: 1px solid rgb(118 142 201 / 34%);
+  background: rgb(9 15 30 / 84%);
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.preview-large-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.preview-small-wrap {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgb(8 12 24 / 92%);
+  border: 1px solid rgb(118 142 201 / 34%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.preview-small-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.preview-fallback {
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #92a9d9;
+  font-size: 12px;
+  text-align: center;
+  padding: 6px;
+}
+
+.preview-content {
+  min-width: 0;
+}
+
+.preview-activity {
+  margin: 0;
+  font-size: 13px;
+  color: #9eb4e6;
+}
+
+.preview-details {
+  margin: 4px 0 0;
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.preview-state {
+  margin: 5px 0 0;
+  color: #c4d2ef;
+  font-size: 15px;
+}
+
+.preview-time {
+  margin: 9px 0 0;
+  color: #88dbb3;
+  font-size: 13px;
+}
+
+.preview-buttons {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preview-button {
+  text-decoration: none;
+  color: #eef4ff;
+  background: rgb(55 78 131 / 92%);
+  border: 1px solid rgb(111 137 192 / 38%);
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.preview-empty-buttons {
+  color: #8ca2d5;
+  font-size: 12px;
+}
+
+.validation-toolbar {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.validation-summary {
+  font-size: 13px;
+  color: #a8bddf;
+}
+
+.validation-summary[data-tone="good"] {
+  color: #69d8a9;
+}
+
+.validation-summary[data-tone="warn"] {
+  color: #f1c97a;
+}
+
+.validation-summary[data-tone="bad"] {
+  color: #ff8a82;
+}
+
+.validation-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.validation-item {
+  border: 1px solid rgb(107 130 182 / 27%);
+  border-radius: 10px;
+  background: rgb(11 18 34 / 82%);
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #c7d4ef;
+}
+
+.validation-item.error {
+  border-color: rgb(214 109 109 / 35%);
+  color: #ff9992;
+}
+
+.validation-item.warn {
+  border-color: rgb(201 166 106 / 35%);
+  color: #f5d39b;
+}
+
+.validation-item.ok {
+  border-color: rgb(96 185 151 / 30%);
+  color: #79deba;
+}
+
+.rotation-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.rotation-inline {
+  margin-top: 8px;
+}
+
+.update-inline {
+  margin-top: 8px;
+}
+
 .status {
   margin: 4px;
   font-size: 14px;
@@ -293,6 +506,22 @@ select {
 }
 
 .status[data-tone="bad"] {
+  color: #ff8680;
+}
+
+#rotation-status[data-tone="good"] {
+  color: #59d9a7;
+}
+
+#rotation-status[data-tone="bad"] {
+  color: #ff8680;
+}
+
+#update-status[data-tone="good"] {
+  color: #59d9a7;
+}
+
+#update-status[data-tone="bad"] {
   color: #ff8680;
 }
 
@@ -311,6 +540,14 @@ select {
 
   .slot-row button {
     width: 100%;
+  }
+
+  .preview-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .rotation-grid {
+    grid-template-columns: 1fr;
   }
 }
 

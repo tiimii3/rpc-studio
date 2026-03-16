@@ -18,6 +18,7 @@ Cross-platform desktop app (macOS, Windows, Linux) for local Discord Rich Presen
 - Optional start/end timestamps (unix seconds).
 - Clear/disconnect actions.
 - Draft values are saved locally.
+- In-app updater button (check + install from GitHub Releases).
 
 ## Run
 
@@ -34,3 +35,24 @@ npm run dev
 - Discord allows max 2 clickable buttons per activity.
 - Visibility of multiple simultaneous activities depends on Discord client behavior.
 - This app is for local user presence, not server-side 24/7 hosting.
+- Discord account status (`online` / `idle` / `dnd`) cannot be changed with official RPC API.
+
+## Auto-Updater Setup (One-Time)
+
+1. Generate updater signing keys:
+
+```bash
+npm run tauri signer generate -- -w ~/.tauri/rpc-studio.key
+```
+
+2. In GitHub repo settings, add these secrets:
+- `TAURI_SIGNING_PRIVATE_KEY` -> paste the full content of `~/.tauri/rpc-studio.key`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` -> the password you set during key generation
+
+3. Copy your public key from generated output and set:
+- `src-tauri/tauri.conf.json` -> `plugins.updater.pubkey`
+
+4. Keep endpoint as:
+- `https://github.com/tiimii3/rpc-studio/releases/latest/download/latest.json`
+
+5. Bump version and push. GitHub Actions release workflow signs artifacts and uploads updater files.
