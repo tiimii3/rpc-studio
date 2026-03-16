@@ -37,20 +37,12 @@ const i18n = {
     version_label: "Version",
     updates_title: "Updates",
     update_check_btn: "Check for updates",
-    update_install_btn: "Install update",
     update_download_btn: "Download",
     update_idle: "Click to check for a newer version.",
-    update_hint:
-      "Checks latest release. If signed updater is available, Install update appears.",
+    update_hint: "Checks latest release and shows Download if a newer version exists.",
     update_checking: "Checking for updates...",
     update_up_to_date: "You are up to date ({current}).",
     update_available: "New version available: {latest} (current: {current}).",
-    update_install_ready:
-      "New version available: {latest}. You can install now (current: {current}).",
-    update_installing: "Installing update and preparing restart...",
-    update_installed_restart: "Update installed. Restarting app...",
-    update_install_fallback:
-      "Auto-install is not available for this build. Use Download instead.",
     update_error: "Could not check updates right now. Try again in a bit.",
     subtitle:
       "Set custom details, state, and image assets for your local Discord desktop session.",
@@ -141,20 +133,12 @@ const i18n = {
     version_label: "Verzija",
     updates_title: "Posodobitve",
     update_check_btn: "Preveri posodobitve",
-    update_install_btn: "Namesti posodobitev",
     update_download_btn: "Prenesi",
     update_idle: "Klikni za preverjanje nove verzije.",
-    update_hint:
-      "Preveri zadnji release. Ce je podpisan updater na voljo, se pokaze Namesti posodobitev.",
+    update_hint: "Preveri zadnji release in pokaze Prenesi, ce je nova verzija.",
     update_checking: "Preverjam posodobitve...",
     update_up_to_date: "Imas zadnjo verzijo ({current}).",
     update_available: "Nova verzija je na voljo: {latest} (trenutna: {current}).",
-    update_install_ready:
-      "Nova verzija je na voljo: {latest}. Lahko namestis takoj (trenutna: {current}).",
-    update_installing: "Namescam posodobitev in pripravljam ponovni zagon...",
-    update_installed_restart: "Posodobitev namescena. Ponovno zaganjam aplikacijo...",
-    update_install_fallback:
-      "Samodejna namestitev ni na voljo za ta build. Uporabi Prenesi.",
     update_error: "Posodobitev trenutno ni bilo mogoce preveriti. Poskusi znova.",
     subtitle:
       "Nastavi details, state in slike za lokalni Discord desktop session.",
@@ -245,7 +229,6 @@ let currentLang = "en";
 let lastStatus = { key: "status_disconnected", tone: "neutral", raw: false };
 let lastUpdateState = { key: "update_idle", tone: "neutral", vars: {} };
 let currentAppVersion = null;
-let pendingNativeUpdate = null;
 
 function t(key) {
   return i18n[currentLang]?.[key] ?? i18n.en[key] ?? key;
@@ -282,10 +265,6 @@ function compareVersions(left, right) {
 
 function text(id) {
   return els[id].value.trim();
-}
-
-function updaterApi() {
-  return window.__TAURI__?.updater ?? null;
 }
 
 function errorText(error) {
@@ -436,17 +415,6 @@ function hideUpdateDownload() {
   els["download-update-link"].removeAttribute("href");
 }
 
-function hideUpdateInstall() {
-  pendingNativeUpdate = null;
-  els["install-update"].classList.add("hidden");
-}
-
-function showUpdateInstall(update) {
-  pendingNativeUpdate = update ?? null;
-  if (!pendingNativeUpdate) return;
-  els["install-update"].classList.remove("hidden");
-}
-
 function showUpdateDownload(url) {
   const safeUrl =
     typeof url === "string" && url.startsWith("https://") ? url : RELEASES_PAGE;
@@ -501,7 +469,6 @@ async function loadAppVersion() {
 }
 
 async function checkForUpdates() {
-  hideUpdateInstall();
   hideUpdateDownload();
   setUpdateStatus("update_checking", "neutral");
   els["check-updates"].disabled = true;
@@ -514,25 +481,6 @@ async function checkForUpdates() {
     const current = currentAppVersion;
     if (!current) {
       throw new Error("Missing local app version");
-    }
-
-    const api = updaterApi();
-    if (api?.check) {
-      try {
-        const nativeUpdate = await api.check();
-        if (nativeUpdate && nativeUpdate.version) {
-          const latest = normalizeVersion(nativeUpdate.version) || nativeUpdate.version;
-          setUpdateStatus("update_install_ready", "good", {
-            latest: `v${latest}`,
-            current: `v${current}`,
-          });
-          showUpdateInstall(nativeUpdate);
-          showUpdateDownload(RELEASES_PAGE);
-          return;
-        }
-      } catch {
-        // Fall back to GitHub check if updater plugin is unavailable or not configured.
-      }
     }
 
     const response = await fetch(RELEASES_LATEST_API, {
@@ -568,30 +516,6 @@ async function checkForUpdates() {
     setUpdateStatus("update_error", "bad");
   } finally {
     els["check-updates"].disabled = false;
-  }
-}
-
-async function installUpdate() {
-  if (!pendingNativeUpdate || typeof pendingNativeUpdate.downloadAndInstall !== "function") {
-    setUpdateStatus("update_install_fallback", "bad");
-    showUpdateDownload(RELEASES_PAGE);
-    return;
-  }
-
-  els["check-updates"].disabled = true;
-  els["install-update"].disabled = true;
-  setUpdateStatus("update_installing", "neutral");
-
-  try {
-    await pendingNativeUpdate.downloadAndInstall();
-    setUpdateStatus("update_installed_restart", "good");
-    await invoke("restart_app");
-  } catch (error) {
-    setUpdateStatus(errorText(error), "bad", {});
-    showUpdateDownload(RELEASES_PAGE);
-  } finally {
-    els["check-updates"].disabled = false;
-    els["install-update"].disabled = false;
   }
 }
 
@@ -882,7 +806,6 @@ window.addEventListener("DOMContentLoaded", () => {
   els["slot-c-name"] = document.getElementById("slot-c-name");
   els["app-version"] = document.getElementById("app-version");
   els["check-updates"] = document.getElementById("check-updates-btn");
-  els["install-update"] = document.getElementById("install-update-btn");
   els["download-update-link"] = document.getElementById("download-update-link");
   els["update-status"] = document.getElementById("update-status");
 
@@ -911,7 +834,6 @@ window.addEventListener("DOMContentLoaded", () => {
   refreshConnectedSessions();
   loadAutostartState();
   loadAppVersion();
-  hideUpdateInstall();
   hideUpdateDownload();
   setStatus("status_disconnected", "neutral");
   setUpdateStatus("update_idle", "neutral");
@@ -934,5 +856,4 @@ window.addEventListener("DOMContentLoaded", () => {
   els["run-slot-c"].addEventListener("click", () => run(() => runSlot("c")));
   els["autostart-toggle"].addEventListener("change", () => run(setAutostartFromUi));
   els["check-updates"].addEventListener("click", () => run(checkForUpdates));
-  els["install-update"].addEventListener("click", () => run(installUpdate));
 });

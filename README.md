@@ -19,7 +19,6 @@ RPC Studio is a cross-platform desktop app (macOS, Windows, Linux) for local Dis
 
 - RPC Studio does not require Discord account tokens.
 - App settings/profiles are stored locally on your machine.
-- Signing keys/certificates must stay in GitHub Secrets (never commit to repo).
 
 ## Requirements
 
@@ -75,9 +74,7 @@ open "/Applications/RPC Studio.app"
 
 - `Check for updates` calls GitHub latest release API.
 - If newer version exists, app shows `New version available`.
-- If signed updater metadata is available, app shows `Install update` for one-click install + restart.
-- `Download` remains as fallback.
-- Download opens the release page in browser (manual install flow, safer than forced auto-install).
+- `Download` opens the release page in browser for manual update.
 - For macOS, install from `.dmg` release asset.
 
 ## Release Notes Template

@@ -128,11 +128,6 @@ fn app_version() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn restart_app(app: AppHandle) {
-    app.restart();
-}
-
-#[tauri::command]
 fn autostart_is_enabled(app: AppHandle) -> Result<bool, String> {
     app.autolaunch().is_enabled().map_err(|e| e.to_string())
 }
@@ -334,7 +329,6 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             create_tray(&app.handle())?;
 
@@ -360,7 +354,6 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             app_version,
-            restart_app,
             autostart_is_enabled,
             autostart_set_enabled,
             rpc_connect,
