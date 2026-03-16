@@ -85,10 +85,23 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Verify updater signing secrets
+        run: |
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
+            echo "Missing secret: TAURI_SIGNING_PRIVATE_KEY"
+            exit 1
+          fi
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
+            echo "Missing secret: TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+            exit 1
+          fi
+
       - name: Build and upload release assets
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v${{ needs.prepare.outputs.version }}
           releaseName: RPC Studio v${{ needs.prepare.outputs.version }}
