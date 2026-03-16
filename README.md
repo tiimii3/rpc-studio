@@ -61,6 +61,15 @@ Before pushing a new stable release:
 - Install from the `.dmg` asset only.
 - This usually gives the standard `Open Anyway` flow, but behavior can still vary by macOS version and security policy.
 
+### macOS Troubleshooting
+
+If the app does not start on macOS, run this in Terminal:
+
+```bash
+xattr -r -d com.apple.quarantine "/Applications/RPC Studio.app"
+open "/Applications/RPC Studio.app"
+```
+
 ## Check For Updates (In App)
 
 - `Check for updates` calls GitHub latest release API.

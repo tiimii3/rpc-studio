@@ -94,7 +94,14 @@ jobs:
         with:
           tagName: v${{ needs.prepare.outputs.version }}
           releaseName: RPC Studio v${{ needs.prepare.outputs.version }}
-          releaseBody: Automatic cross-platform release build from GitHub Actions.
+          releaseBody: |
+            Automatic cross-platform release build from GitHub Actions.
+
+            macOS note:
+            If the app does not open, run in Terminal:
+            `xattr -r -d com.apple.quarantine "/Applications/RPC Studio.app"`
+            Then run:
+            `open "/Applications/RPC Studio.app"`
           releaseDraft: false
           prerelease: false
           args: --bundles dmg --no-sign
@@ -107,6 +114,13 @@ jobs:
         with:
           tagName: v${{ needs.prepare.outputs.version }}
           releaseName: RPC Studio v${{ needs.prepare.outputs.version }}
-          releaseBody: Automatic cross-platform release build from GitHub Actions.
+          releaseBody: |
+            Automatic cross-platform release build from GitHub Actions.
+
+            macOS note:
+            If the app does not open, run in Terminal:
+            `xattr -r -d com.apple.quarantine "/Applications/RPC Studio.app"`
+            Then run:
+            `open "/Applications/RPC Studio.app"`
           releaseDraft: false
           prerelease: false
