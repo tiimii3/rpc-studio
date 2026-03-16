@@ -117,6 +117,17 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
 }
 
 #[tauri::command]
+fn app_version() -> Result<String, String> {
+    let raw = include_str!("../tauri.conf.json");
+    let parsed: serde_json::Value = serde_json::from_str(raw).map_err(|e| e.to_string())?;
+    parsed
+        .get("version")
+        .and_then(|value| value.as_str())
+        .map(str::to_owned)
+        .ok_or_else(|| "Version missing in tauri.conf.json.".to_owned())
+}
+
+#[tauri::command]
 fn autostart_is_enabled(app: AppHandle) -> Result<bool, String> {
     app.autolaunch().is_enabled().map_err(|e| e.to_string())
 }
@@ -342,6 +353,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            app_version,
             autostart_is_enabled,
             autostart_set_enabled,
             rpc_connect,

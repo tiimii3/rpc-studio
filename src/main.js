@@ -31,6 +31,7 @@ const i18n = {
   en: {
     eyebrow: "Discord Rich Presence",
     language_label: "Language",
+    version_label: "Version",
     subtitle:
       "Set custom details, state, and image assets for your local Discord desktop session.",
     profiles_title: "Profiles",
@@ -115,6 +116,7 @@ const i18n = {
   sl: {
     eyebrow: "Discord Rich Presence",
     language_label: "Jezik",
+    version_label: "Verzija",
     subtitle:
       "Nastavi details, state in slike za lokalni Discord desktop session.",
     profiles_title: "Profili",
@@ -375,6 +377,15 @@ async function loadAutostartState() {
   }
 }
 
+async function loadAppVersion() {
+  try {
+    const version = await invoke("app_version");
+    els["app-version"].textContent = version ? `v${version}` : "-";
+  } catch {
+    els["app-version"].textContent = "-";
+  }
+}
+
 function requireClientId() {
   const clientId = text("client-id");
   if (!clientId) throw new Error(t("err_client_id"));
@@ -627,6 +638,7 @@ window.addEventListener("DOMContentLoaded", () => {
   els["slot-a-name"] = document.getElementById("slot-a-name");
   els["slot-b-name"] = document.getElementById("slot-b-name");
   els["slot-c-name"] = document.getElementById("slot-c-name");
+  els["app-version"] = document.getElementById("app-version");
 
   for (const id of fieldIds) {
     els[id].addEventListener("input", saveDraft);
@@ -652,6 +664,7 @@ window.addEventListener("DOMContentLoaded", () => {
   applyTranslations();
   refreshConnectedSessions();
   loadAutostartState();
+  loadAppVersion();
   setStatus("status_disconnected", "neutral");
 
   els.connect.addEventListener("click", () => run(connectRpc));

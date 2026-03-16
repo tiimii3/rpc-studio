@@ -56,6 +56,12 @@ body {
   align-items: flex-start;
 }
 
+.hero-meta {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
 .eyebrow {
   margin: 0;
   letter-spacing: 0.14em;
@@ -77,6 +83,12 @@ body {
 
 .lang-switch select {
   min-width: 84px;
+}
+
+.version-line {
+  margin: 0;
+  font-size: 12px;
+  color: #9db4e7;
 }
 
 .hero h1 {
@@ -321,6 +333,10 @@ select {
 
   .hero-top {
     flex-direction: column;
+  }
+
+  .hero-meta {
+    justify-items: start;
   }
 
   .inline,
