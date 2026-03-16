@@ -73,9 +73,31 @@ open "/Applications/RPC Studio.app"
 ## Check For Updates (In App)
 
 - `Check for updates` calls GitHub latest release API.
-- If newer version exists, app shows `New version available` and a `Download` button.
+- If newer version exists, app shows `New version available`.
+- If signed updater metadata is available, app shows `Install update` for one-click install + restart.
+- `Download` remains as fallback.
 - Download opens the release page in browser (manual install flow, safer than forced auto-install).
 - For macOS, install from `.dmg` release asset.
+
+### Updater Signing Secrets (for Install update)
+
+Add these GitHub repository secrets:
+
+- `TAURI_SIGNING_PRIVATE_KEY`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+
+Without these two secrets, release builds cannot produce trusted updater signatures and `Install update` will not work correctly.
+
+Generate updater keys once:
+
+```bash
+npm run tauri -- signer generate --ci --write-keys /tmp/rpc-studio-update.key --password "your-password"
+```
+
+Then set:
+
+- `TAURI_SIGNING_PRIVATE_KEY` = full contents of `/tmp/rpc-studio-update.key`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = same password you used above
 
 ## Release Notes Template
 

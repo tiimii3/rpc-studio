@@ -222,6 +222,10 @@ body {
   display: none;
 }
 
+button.hidden {
+  display: none;
+}
+
 .update-status {
   margin-top: 10px;
 }

@@ -26,6 +26,11 @@
 - Windows:
 - Linux:
 
+## In-App Update
+
+- Open `RPC Studio` -> `Check for updates`
+- If available, click `Install update`
+
 ## macOS If App Does Not Open
 
 ```bash
