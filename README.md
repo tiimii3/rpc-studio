@@ -7,6 +7,7 @@ RPC Studio is a cross-platform desktop app (macOS, Windows, Linux) for local Dis
 - Connect with Discord `Client ID` (no account token required).
 - Multi-session support for multiple Client IDs.
 - Profiles (save/load/delete) and quick slots `A/B/C`.
+- Export config to `.json` backup (profiles, quick slots, and current draft).
 - Activity types: `Playing`, `Watching`, `Listening`, `Competing`.
 - Rich fields: details, state, images, tooltips, timestamps, clickable buttons.
 - Start-at elapsed timer (for example `5h 22m`).

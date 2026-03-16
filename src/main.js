@@ -59,6 +59,7 @@ const i18n = {
     save_profile_btn: "Save Profile",
     load_profile_btn: "Load",
     delete_profile_btn: "Delete",
+    export_config_btn: "Export Config",
     profiles_hint: "Save and load your full RPC setup with one click.",
     behavior_title: "App Behavior",
     autostart_label: "Launch on system startup",
@@ -119,6 +120,7 @@ const i18n = {
     status_profile_saved: "Profile saved.",
     status_profile_loaded: "Profile loaded.",
     status_profile_deleted: "Profile deleted.",
+    status_config_exported: "Config exported.",
     status_slot_assigned: "Slot assigned.",
     status_slot_ran: "Slot started.",
     status_autostart_updated: "Startup setting updated.",
@@ -161,6 +163,7 @@ const i18n = {
     save_profile_btn: "Shrani profil",
     load_profile_btn: "Nalozi",
     delete_profile_btn: "Izbrisi",
+    export_config_btn: "Izvozi config",
     profiles_hint: "Shrani in nalozi celoten RPC setup z enim klikom.",
     behavior_title: "Obnasanje aplikacije",
     autostart_label: "Zazeni ob zagonu sistema",
@@ -221,6 +224,7 @@ const i18n = {
     status_profile_saved: "Profil shranjen.",
     status_profile_loaded: "Profil nalozen.",
     status_profile_deleted: "Profil izbrisan.",
+    status_config_exported: "Config izvozen.",
     status_slot_assigned: "Slot dodeljen.",
     status_slot_ran: "Slot zagnan.",
     status_autostart_updated: "Nastavitev zagona posodobljena.",
@@ -777,6 +781,37 @@ function deleteProfile() {
   setStatus("status_profile_deleted", "neutral");
 }
 
+function exportConfig() {
+  const exportedAt = new Date().toISOString();
+  const filenameStamp = exportedAt.replace(/[:.]/g, "-");
+  const payload = {
+    app: "RPC Studio",
+    exportedAt,
+    version: currentAppVersion ? `v${currentAppVersion}` : null,
+    config: {
+      draft: collectFormData(),
+      profiles: readProfiles(),
+      quickSlots: readQuickSlots(),
+      language: currentLang,
+      selectedProfile: getSelectedProfileName() || null,
+    },
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `rpc-studio-config-${filenameStamp}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+
+  setStatus("status_config_exported", "good");
+}
+
 function assignSlot(slot) {
   const name = getSelectedProfileName();
   if (!name) throw new Error(t("err_profile_select"));
@@ -834,6 +869,7 @@ window.addEventListener("DOMContentLoaded", () => {
   els.saveProfile = document.getElementById("save-profile-btn");
   els.loadProfile = document.getElementById("load-profile-btn");
   els.deleteProfile = document.getElementById("delete-profile-btn");
+  els.exportConfig = document.getElementById("export-config-btn");
   els["connected-sessions"] = document.getElementById("connected-sessions");
   els["assign-slot-a"] = document.getElementById("assign-slot-a-btn");
   els["assign-slot-b"] = document.getElementById("assign-slot-b-btn");
@@ -889,6 +925,7 @@ window.addEventListener("DOMContentLoaded", () => {
   els.saveProfile.addEventListener("click", () => run(() => saveProfile()));
   els.loadProfile.addEventListener("click", () => run(() => loadProfile()));
   els.deleteProfile.addEventListener("click", () => run(() => deleteProfile()));
+  els.exportConfig.addEventListener("click", () => run(() => exportConfig()));
   els["assign-slot-a"].addEventListener("click", () => run(() => assignSlot("a")));
   els["assign-slot-b"].addEventListener("click", () => run(() => assignSlot("b")));
   els["assign-slot-c"].addEventListener("click", () => run(() => assignSlot("c")));
