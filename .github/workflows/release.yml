@@ -90,14 +90,13 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SKIP_SIGNING: "true"
         with:
           tagName: v${{ needs.prepare.outputs.version }}
           releaseName: RPC Studio v${{ needs.prepare.outputs.version }}
           releaseBody: Automatic cross-platform release build from GitHub Actions.
           releaseDraft: false
           prerelease: false
-          args: --bundles dmg
+          args: --bundles dmg --no-sign
 
       - name: Build and upload release assets (Windows/Linux)
         if: matrix.platform != 'macos-latest'

@@ -61,6 +61,7 @@ Before pushing a new stable release:
 - If newer version exists, app shows `New version available` and a `Download` button.
 - Download opens the release page in browser (manual install flow, safer than forced auto-install).
 - For macOS, install from `.dmg` release asset.
+- macOS release workflow uses `--no-sign` so users should get the standard `Open Anyway` flow instead of a broken signature warning.
 
 ## Release Notes Template
 
