@@ -60,6 +60,7 @@ Before pushing a new stable release:
 - `Check for updates` calls GitHub latest release API.
 - If newer version exists, app shows `New version available` and a `Download` button.
 - Download opens the release page in browser (manual install flow, safer than forced auto-install).
+- For macOS, install from `.dmg` release asset.
 
 ## Release Notes Template
 

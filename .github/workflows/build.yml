@@ -45,7 +45,14 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Build Tauri bundles
+      - name: Build Tauri bundles (macOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          TAURI_SKIP_SIGNING: "true"
+        run: npm run build -- --bundles dmg
+
+      - name: Build Tauri bundles (Windows/Linux)
+        if: matrix.platform != 'macos-latest'
         run: npm run build
 
       - name: Upload build artifacts
