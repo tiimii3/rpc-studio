@@ -46,9 +46,14 @@ jobs:
         run: npm ci
 
       - name: Verify updater signing secrets
+        shell: bash
         run: |
           if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
             echo "Missing secret: TAURI_SIGNING_PRIVATE_KEY"
+            exit 1
+          fi
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
+            echo "Missing secret: TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
             exit 1
           fi
 
