@@ -55,19 +55,11 @@ Before pushing a new stable release:
    - `package.json`
 2. Commit and push to `main`.
 
-### macOS Signing + Notarization (Required for clean Gatekeeper flow)
+### macOS Distribution Mode
 
-Set these GitHub repository secrets:
-
-- `APPLE_CERTIFICATE` (base64 of `.p12` certificate export)
-- `APPLE_CERTIFICATE_PASSWORD`
-- `APPLE_SIGNING_IDENTITY` (for example: `Developer ID Application: Your Name (TEAMID)`)
-- `APPLE_ID` (Apple account email)
-- `APPLE_PASSWORD` (app-specific password)
-- `APPLE_TEAM_ID`
-
-Without these, macOS app can be blocked as damaged/untrusted by Gatekeeper.
-Detailed setup: `docs/macos-notarization.md`.
+- macOS release is built as `--no-sign` to avoid broken/partial signatures.
+- Install from the `.dmg` asset only.
+- This usually gives the standard `Open Anyway` flow, but behavior can still vary by macOS version and security policy.
 
 ## Check For Updates (In App)
 
