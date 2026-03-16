@@ -49,6 +49,31 @@
       </section>
 
       <section class="card">
+        <label data-i18n="updates_title">Updates</label>
+        <div class="updates-row">
+          <button id="check-updates-btn" class="ghost" data-i18n="update_check_btn">
+            Check for updates
+          </button>
+          <a
+            id="download-update-link"
+            class="button-link hidden"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="update_download_btn"
+          >
+            Download
+          </a>
+        </div>
+        <p id="update-status" class="hint update-status" data-i18n="update_idle">
+          Click to check for a newer version.
+        </p>
+        <p class="hint" data-i18n="update_hint">
+          Checks latest stable GitHub release and shows a download button if newer.
+        </p>
+      </section>
+
+      <section class="card">
         <label for="profile-name" data-i18n="profiles_title">Profiles</label>
         <div class="profile-row">
           <select id="profile-select"></select>

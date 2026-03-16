@@ -189,6 +189,51 @@ body {
   color: #8ea7d7;
 }
 
+.updates-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  text-decoration: none;
+  color: #f7fbff;
+  background: linear-gradient(135deg, #3d72ff, #29c7cb);
+  box-shadow: 0 8px 18px rgb(48 106 255 / 38%);
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.button-link:hover {
+  transform: translateY(-1px);
+  opacity: 0.97;
+  box-shadow: 0 10px 22px rgb(48 106 255 / 46%);
+}
+
+.button-link.hidden {
+  display: none;
+}
+
+.update-status {
+  margin-top: 10px;
+}
+
+.update-status[data-tone="good"] {
+  color: #59d9a7;
+}
+
+.update-status[data-tone="bad"] {
+  color: #ff8680;
+}
+
 .controls {
   display: flex;
   gap: 8px;
@@ -212,6 +257,13 @@ button:hover {
   transform: translateY(-1px);
   opacity: 0.97;
   box-shadow: 0 10px 22px rgb(48 106 255 / 46%);
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 button.ghost {
@@ -342,6 +394,16 @@ select {
   .inline,
   .profile-row {
     grid-template-columns: 1fr;
+  }
+
+  .updates-row {
+    width: 100%;
+  }
+
+  .updates-row button,
+  .updates-row .button-link {
+    width: 100%;
+    text-align: center;
   }
 
   .status-table {

@@ -4,6 +4,9 @@ const DRAFT_KEY = "rpc-draft";
 const PROFILES_KEY = "rpc-profiles";
 const QUICK_SLOTS_KEY = "rpc-quick-slots";
 const LANG_KEY = "rpc-language";
+// Update these URLs if you publish from a different GitHub repository.
+const RELEASES_LATEST_API = "https://api.github.com/repos/tiimii3/rpc-studio/releases/latest";
+const RELEASES_PAGE = "https://github.com/tiimii3/rpc-studio/releases/latest";
 
 const fieldIds = [
   "client-id",
@@ -32,6 +35,16 @@ const i18n = {
     eyebrow: "Discord Rich Presence",
     language_label: "Language",
     version_label: "Version",
+    updates_title: "Updates",
+    update_check_btn: "Check for updates",
+    update_download_btn: "Download",
+    update_idle: "Click to check for a newer version.",
+    update_hint:
+      "Checks latest stable GitHub release and shows a download button if newer.",
+    update_checking: "Checking for updates...",
+    update_up_to_date: "You are up to date ({current}).",
+    update_available: "New version available: {latest} (current: {current}).",
+    update_error: "Could not check updates right now. Try again in a bit.",
     subtitle:
       "Set custom details, state, and image assets for your local Discord desktop session.",
     profiles_title: "Profiles",
@@ -117,6 +130,16 @@ const i18n = {
     eyebrow: "Discord Rich Presence",
     language_label: "Jezik",
     version_label: "Verzija",
+    updates_title: "Posodobitve",
+    update_check_btn: "Preveri posodobitve",
+    update_download_btn: "Prenesi",
+    update_idle: "Klikni za preverjanje nove verzije.",
+    update_hint:
+      "Preveri zadnji stabilni GitHub release in pokaze gumb za prenos, ce je novejsi.",
+    update_checking: "Preverjam posodobitve...",
+    update_up_to_date: "Imas zadnjo verzijo ({current}).",
+    update_available: "Nova verzija je na voljo: {latest} (trenutna: {current}).",
+    update_error: "Posodobitev trenutno ni bilo mogoce preveriti. Poskusi znova.",
     subtitle:
       "Nastavi details, state in slike za lokalni Discord desktop session.",
     profiles_title: "Profili",
@@ -202,9 +225,40 @@ const i18n = {
 
 let currentLang = "en";
 let lastStatus = { key: "status_disconnected", tone: "neutral", raw: false };
+let lastUpdateState = { key: "update_idle", tone: "neutral", vars: {} };
+let currentAppVersion = null;
 
 function t(key) {
   return i18n[currentLang]?.[key] ?? i18n.en[key] ?? key;
+}
+
+function formatTemplate(template, vars = {}) {
+  return String(template).replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`);
+}
+
+function normalizeVersion(raw) {
+  const value = String(raw ?? "").trim().replace(/^v/i, "");
+  return value || null;
+}
+
+function versionParts(version) {
+  const normalized = normalizeVersion(version);
+  if (!normalized) return [];
+  return normalized.split(".").map((part) => {
+    const match = part.match(/^(\d+)/);
+    return match ? Number(match[1]) : 0;
+  });
+}
+
+function compareVersions(left, right) {
+  const a = versionParts(left);
+  const b = versionParts(right);
+  const size = Math.max(a.length, b.length);
+  for (let i = 0; i < size; i += 1) {
+    const diff = (a[i] ?? 0) - (b[i] ?? 0);
+    if (diff !== 0) return diff > 0 ? 1 : -1;
+  }
+  return 0;
 }
 
 function text(id) {
@@ -348,6 +402,24 @@ function setStatus(value, tone = "neutral", raw = false) {
   els.status.dataset.tone = tone;
 }
 
+function hideUpdateDownload() {
+  els["download-update-link"].classList.add("hidden");
+  els["download-update-link"].removeAttribute("href");
+}
+
+function showUpdateDownload(url) {
+  const safeUrl =
+    typeof url === "string" && url.startsWith("https://") ? url : RELEASES_PAGE;
+  els["download-update-link"].href = safeUrl;
+  els["download-update-link"].classList.remove("hidden");
+}
+
+function setUpdateStatus(key, tone = "neutral", vars = {}) {
+  lastUpdateState = { key, tone, vars };
+  els["update-status"].textContent = formatTemplate(t(key), vars);
+  els["update-status"].dataset.tone = tone;
+}
+
 function refreshQuickSlots() {
   const slots = readQuickSlots();
   for (const slot of ["a", "b", "c"]) {
@@ -380,9 +452,62 @@ async function loadAutostartState() {
 async function loadAppVersion() {
   try {
     const version = await invoke("app_version");
-    els["app-version"].textContent = version ? `v${version}` : "-";
+    currentAppVersion = normalizeVersion(version);
+    els["app-version"].textContent = currentAppVersion ? `v${currentAppVersion}` : "-";
   } catch {
+    currentAppVersion = null;
     els["app-version"].textContent = "-";
+  }
+}
+
+async function checkForUpdates() {
+  hideUpdateDownload();
+  setUpdateStatus("update_checking", "neutral");
+  els["check-updates"].disabled = true;
+
+  try {
+    if (!currentAppVersion) {
+      await loadAppVersion();
+    }
+
+    const current = currentAppVersion;
+    if (!current) {
+      throw new Error("Missing local app version");
+    }
+
+    const response = await fetch(RELEASES_LATEST_API, {
+      method: "GET",
+      headers: {
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API returned ${response.status}`);
+    }
+
+    const release = await response.json();
+    const latest = normalizeVersion(release?.tag_name);
+    if (!latest) {
+      throw new Error("Missing release version");
+    }
+
+    if (compareVersions(latest, current) > 0) {
+      setUpdateStatus("update_available", "good", {
+        latest: `v${latest}`,
+        current: `v${current}`,
+      });
+      showUpdateDownload(release?.html_url || RELEASES_PAGE);
+      return;
+    }
+
+    setUpdateStatus("update_up_to_date", "neutral", { current: `v${current}` });
+  } catch {
+    setUpdateStatus("update_error", "bad");
+  } finally {
+    els["check-updates"].disabled = false;
   }
 }
 
@@ -415,6 +540,7 @@ function applyTranslations() {
   refreshProfileSelect(els["profile-select"].value || text("profile-name"));
   refreshQuickSlots();
   setStatus(lastStatus.key, lastStatus.tone, lastStatus.raw);
+  setUpdateStatus(lastUpdateState.key, lastUpdateState.tone, lastUpdateState.vars);
   refreshConnectedSessions();
 }
 
@@ -639,6 +765,9 @@ window.addEventListener("DOMContentLoaded", () => {
   els["slot-b-name"] = document.getElementById("slot-b-name");
   els["slot-c-name"] = document.getElementById("slot-c-name");
   els["app-version"] = document.getElementById("app-version");
+  els["check-updates"] = document.getElementById("check-updates-btn");
+  els["download-update-link"] = document.getElementById("download-update-link");
+  els["update-status"] = document.getElementById("update-status");
 
   for (const id of fieldIds) {
     els[id].addEventListener("input", saveDraft);
@@ -665,7 +794,9 @@ window.addEventListener("DOMContentLoaded", () => {
   refreshConnectedSessions();
   loadAutostartState();
   loadAppVersion();
+  hideUpdateDownload();
   setStatus("status_disconnected", "neutral");
+  setUpdateStatus("update_idle", "neutral");
 
   els.connect.addEventListener("click", () => run(connectRpc));
   els.disconnect.addEventListener("click", () => run(disconnectRpc));
@@ -683,4 +814,5 @@ window.addEventListener("DOMContentLoaded", () => {
   els["run-slot-b"].addEventListener("click", () => run(() => runSlot("b")));
   els["run-slot-c"].addEventListener("click", () => run(() => runSlot("c")));
   els["autostart-toggle"].addEventListener("change", () => run(setAutostartFromUi));
+  els["check-updates"].addEventListener("click", () => run(checkForUpdates));
 });
