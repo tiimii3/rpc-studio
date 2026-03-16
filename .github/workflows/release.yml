@@ -111,6 +111,9 @@ jobs:
         with:
           tagName: v${{ needs.prepare.outputs.version }}
           releaseName: RPC Studio v${{ needs.prepare.outputs.version }}
+          includeUpdaterJson: true
+          uploadUpdaterJsonKeepUniversal: true
+          uploadUpdaterSignatures: true
           releaseBody: |
             Automatic cross-platform release build from GitHub Actions.
 
@@ -133,6 +136,9 @@ jobs:
         with:
           tagName: v${{ needs.prepare.outputs.version }}
           releaseName: RPC Studio v${{ needs.prepare.outputs.version }}
+          includeUpdaterJson: true
+          uploadUpdaterJsonKeepUniversal: true
+          uploadUpdaterSignatures: true
           releaseBody: |
             Automatic cross-platform release build from GitHub Actions.
 
