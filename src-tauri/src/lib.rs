@@ -1,5 +1,5 @@
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
@@ -12,10 +12,20 @@ use tauri::ActivationPolicy;
 
 struct RpcState {
     clients: Mutex<HashMap<String, DiscordIpcClient>>,
+    identities: Mutex<HashMap<String, DiscordIdentity>>,
 }
 
 struct RuntimeState {
     quitting: AtomicBool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DiscordIdentity {
+    user_id: Option<String>,
+    username: Option<String>,
+    display_name: Option<String>,
+    avatar_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -63,6 +73,54 @@ fn parse_activity_type(value: &str) -> Result<activity::ActivityType, String> {
         "competing" => Ok(activity::ActivityType::Competing),
         _ => Err("Activity type must be: playing, listening, watching, or competing.".to_owned()),
     }
+}
+
+fn parse_discord_identity(ready_payload: &serde_json::Value) -> Option<DiscordIdentity> {
+    let user = ready_payload.get("data")?.get("user")?;
+    let user_id = user.get("id").and_then(|v| v.as_str()).map(str::to_owned);
+    let username = user
+        .get("username")
+        .and_then(|v| v.as_str())
+        .map(str::to_owned);
+    let display_name = user
+        .get("global_name")
+        .and_then(|v| v.as_str())
+        .map(str::to_owned)
+        .or_else(|| username.clone());
+
+    let avatar_hash = user
+        .get("avatar")
+        .and_then(|v| v.as_str())
+        .map(str::to_owned);
+    let avatar_url = match (user_id.as_deref(), avatar_hash.as_deref()) {
+        (Some(id), Some(hash)) if !id.is_empty() && !hash.is_empty() => {
+            let ext = if hash.starts_with("a_") { "gif" } else { "png" };
+            Some(format!(
+                "https://cdn.discordapp.com/avatars/{id}/{hash}.{ext}?size=128"
+            ))
+        }
+        _ => None,
+    };
+
+    Some(DiscordIdentity {
+        user_id,
+        username,
+        display_name,
+        avatar_url,
+    })
+}
+
+fn connect_and_read_identity(client: &mut DiscordIpcClient) -> Result<Option<DiscordIdentity>, String> {
+    client.connect_ipc().map_err(|e| e.to_string())?;
+
+    let handshake = serde_json::json!({
+      "v": 1,
+      "client_id": client.get_client_id()
+    });
+    client.send(handshake, 0).map_err(|e| e.to_string())?;
+
+    let (_op, payload) = client.recv().map_err(|e| e.to_string())?;
+    Ok(parse_discord_identity(&payload))
 }
 
 fn show_main_window(app: &AppHandle) {
@@ -146,7 +204,7 @@ fn rpc_connect(client_id: String, rpc_state: tauri::State<RpcState>) -> Result<(
     let id = normalize_id(client_id)?;
 
     let mut client = DiscordIpcClient::new(id.as_str()).map_err(|e| e.to_string())?;
-    client.connect().map_err(|e| e.to_string())?;
+    let identity = connect_and_read_identity(&mut client)?;
 
     let mut clients = rpc_state
         .clients
@@ -158,7 +216,17 @@ fn rpc_connect(client_id: String, rpc_state: tauri::State<RpcState>) -> Result<(
         let _ = existing.close();
     }
 
-    clients.insert(id, client);
+    clients.insert(id.clone(), client);
+
+    let mut identities = rpc_state
+        .identities
+        .lock()
+        .map_err(|_| "Failed to access RPC identity state.".to_owned())?;
+    if let Some(identity) = identity {
+        identities.insert(id, identity);
+    } else {
+        identities.remove(id.as_str());
+    }
     Ok(())
 }
 
@@ -286,6 +354,12 @@ fn rpc_disconnect(client_id: String, rpc_state: tauri::State<RpcState>) -> Resul
         let _ = client.close();
     }
 
+    let mut identities = rpc_state
+        .identities
+        .lock()
+        .map_err(|_| "Failed to access RPC identity state.".to_owned())?;
+    identities.remove(id.as_str());
+
     Ok(())
 }
 
@@ -301,6 +375,12 @@ fn rpc_disconnect_all(rpc_state: tauri::State<RpcState>) -> Result<(), String> {
         let _ = client.close();
     }
 
+    let mut identities = rpc_state
+        .identities
+        .lock()
+        .map_err(|_| "Failed to access RPC identity state.".to_owned())?;
+    identities.clear();
+
     Ok(())
 }
 
@@ -315,11 +395,25 @@ fn rpc_list_connected(rpc_state: tauri::State<RpcState>) -> Result<Vec<String>, 
     Ok(ids)
 }
 
+#[tauri::command]
+fn rpc_get_identity(
+    client_id: String,
+    rpc_state: tauri::State<RpcState>,
+) -> Result<Option<DiscordIdentity>, String> {
+    let id = normalize_id(client_id)?;
+    let identities = rpc_state
+        .identities
+        .lock()
+        .map_err(|_| "Failed to access RPC identity state.".to_owned())?;
+    Ok(identities.get(id.as_str()).cloned())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(RpcState {
             clients: Mutex::new(HashMap::new()),
+            identities: Mutex::new(HashMap::new()),
         })
         .manage(RuntimeState {
             quitting: AtomicBool::new(false),
@@ -361,7 +455,8 @@ pub fn run() {
             rpc_clear_presence,
             rpc_disconnect,
             rpc_disconnect_all,
-            rpc_list_connected
+            rpc_list_connected,
+            rpc_get_identity
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

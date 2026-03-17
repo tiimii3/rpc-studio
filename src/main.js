@@ -4,6 +4,7 @@ const DRAFT_KEY = "rpc-draft";
 const PROFILES_KEY = "rpc-profiles";
 const QUICK_SLOTS_KEY = "rpc-quick-slots";
 const LANG_KEY = "rpc-language";
+const THEME_KEY = "rpc-theme";
 const AUTO_APPLY_KEY = "rpc-auto-apply-launch";
 const STARTUP_SOURCE_KEY = "rpc-startup-source";
 const LAST_ACTIVE_PROFILE_KEY = "rpc-last-active-profile";
@@ -40,6 +41,10 @@ const i18n = {
   en: {
     eyebrow: "Discord Rich Presence",
     language_label: "Language",
+    theme_label: "Theme",
+    theme_auto: "Auto",
+    theme_dark: "Dark",
+    theme_light: "Light",
     version_label: "Version",
     updates_title: "Updates",
     update_check_btn: "Check for updates",
@@ -52,6 +57,11 @@ const i18n = {
     update_error: "Could not check updates right now. Try again in a bit.",
     subtitle:
       "Set custom details, state, and image assets for your local Discord desktop session.",
+    identity_title_connected: "Welcome, {name}",
+    identity_sub_connected: "Connected via Client ID {clientId}",
+    identity_title_disconnected: "Discord not connected",
+    identity_sub_disconnected: "Connect any Client ID to show current Discord profile.",
+    identity_unknown_name: "Discord user",
     profiles_title: "Profiles",
     profile_name_placeholder: "Profile name",
     save_profile_btn: "Save Profile",
@@ -149,6 +159,10 @@ const i18n = {
   sl: {
     eyebrow: "Discord Rich Presence",
     language_label: "Jezik",
+    theme_label: "Tema",
+    theme_auto: "Samodejno",
+    theme_dark: "Temna",
+    theme_light: "Svetla",
     version_label: "Verzija",
     updates_title: "Posodobitve",
     update_check_btn: "Preveri posodobitve",
@@ -161,6 +175,11 @@ const i18n = {
     update_error: "Posodobitev trenutno ni bilo mogoce preveriti. Poskusi znova.",
     subtitle:
       "Nastavi details, state in slike za lokalni Discord desktop session.",
+    identity_title_connected: "Pozdravljen, {name}",
+    identity_sub_connected: "Povezano prek Client ID {clientId}",
+    identity_title_disconnected: "Discord ni povezan",
+    identity_sub_disconnected: "Povezi katerikoli Client ID za prikaz Discord profila.",
+    identity_unknown_name: "Discord uporabnik",
     profiles_title: "Profili",
     profile_name_placeholder: "Ime profila",
     save_profile_btn: "Shrani profil",
@@ -258,6 +277,8 @@ const i18n = {
 };
 
 let currentLang = "en";
+let currentThemePreference = "auto";
+let currentDiscordIdentity = null;
 let lastStatus = { key: "status_disconnected", tone: "neutral", raw: false };
 let lastUpdateState = { key: "update_idle", tone: "neutral", vars: {} };
 let currentAppVersion = null;
@@ -267,6 +288,7 @@ let reconnectTimer = null;
 let reconnectInFlight = false;
 let startupAutoApplyTimer = null;
 let startupAutoApplyKickTimer = null;
+let systemThemeMediaQuery = null;
 
 function t(key) {
   return i18n[currentLang]?.[key] ?? i18n.en[key] ?? key;
@@ -299,6 +321,100 @@ function compareVersions(left, right) {
     if (diff !== 0) return diff > 0 ? 1 : -1;
   }
   return 0;
+}
+
+function readThemePreference() {
+  const value = localStorage.getItem(THEME_KEY);
+  if (value === "dark" || value === "light" || value === "auto") return value;
+  return "auto";
+}
+
+function getSystemTheme() {
+  if (typeof window.matchMedia !== "function") return "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyThemePreference(preference = currentThemePreference) {
+  currentThemePreference =
+    preference === "dark" || preference === "light" || preference === "auto"
+      ? preference
+      : "auto";
+  const resolvedTheme = currentThemePreference === "auto" ? getSystemTheme() : currentThemePreference;
+  document.documentElement.dataset.theme = resolvedTheme;
+  document.documentElement.dataset.themePreference = currentThemePreference;
+  if (els["theme-select"]) {
+    els["theme-select"].value = currentThemePreference;
+  }
+}
+
+function initSystemThemeWatcher() {
+  if (typeof window.matchMedia !== "function") return;
+  systemThemeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const handler = () => {
+    if (currentThemePreference === "auto") {
+      applyThemePreference("auto");
+    }
+  };
+  if (typeof systemThemeMediaQuery.addEventListener === "function") {
+    systemThemeMediaQuery.addEventListener("change", handler);
+  } else if (typeof systemThemeMediaQuery.addListener === "function") {
+    systemThemeMediaQuery.addListener(handler);
+  }
+}
+
+function getDiscordIdentityName(identity) {
+  const displayName = normalizeFieldValue(identity?.displayName);
+  if (displayName) return displayName;
+  const username = normalizeFieldValue(identity?.username);
+  if (username) return username;
+  return t("identity_unknown_name");
+}
+
+function getIdentityInitial(name) {
+  const value = normalizeFieldValue(name);
+  if (!value) return "D";
+  return value[0].toUpperCase();
+}
+
+function renderDiscordIdentity(identity) {
+  if (!els["discord-identity-title"]) return;
+
+  const titleEl = els["discord-identity-title"];
+  const subEl = els["discord-identity-sub"];
+  const avatarImg = els["discord-avatar-img"];
+  const avatarFallback = els["discord-avatar-fallback"];
+
+  if (!identity) {
+    titleEl.textContent = t("identity_title_disconnected");
+    subEl.textContent = t("identity_sub_disconnected");
+    avatarImg.classList.add("hidden");
+    avatarImg.removeAttribute("src");
+    avatarImg.alt = "";
+    avatarFallback.textContent = "D";
+    avatarFallback.classList.remove("hidden");
+    return;
+  }
+
+  const name = getDiscordIdentityName(identity);
+  titleEl.textContent = formatTemplate(t("identity_title_connected"), { name });
+  subEl.textContent = formatTemplate(t("identity_sub_connected"), {
+    clientId: normalizeFieldValue(identity.clientId) || "-",
+  });
+
+  const avatarUrl = normalizeFieldValue(identity.avatarUrl);
+  if (avatarUrl.startsWith("https://")) {
+    avatarImg.src = avatarUrl;
+    avatarImg.alt = `${name} avatar`;
+    avatarImg.classList.remove("hidden");
+    avatarFallback.classList.add("hidden");
+    return;
+  }
+
+  avatarImg.classList.add("hidden");
+  avatarImg.removeAttribute("src");
+  avatarImg.alt = "";
+  avatarFallback.textContent = getIdentityInitial(name);
+  avatarFallback.classList.remove("hidden");
 }
 
 function text(id) {
@@ -648,14 +764,48 @@ function refreshQuickSlots() {
   }
 }
 
+async function refreshDiscordIdentityFromConnectedIds(ids) {
+  const connectedIds = Array.isArray(ids) ? ids.map((id) => String(id).trim()).filter(Boolean) : [];
+  if (connectedIds.length === 0) {
+    currentDiscordIdentity = null;
+    renderDiscordIdentity(null);
+    return;
+  }
+
+  const preferred = text("client-id");
+  const selectedClientId = preferred && connectedIds.includes(preferred) ? preferred : connectedIds[0];
+
+  try {
+    const identity = await invoke("rpc_get_identity", { clientId: selectedClientId });
+    if (identity && typeof identity === "object") {
+      currentDiscordIdentity = {
+        userId: normalizeFieldValue(identity.userId),
+        username: normalizeFieldValue(identity.username),
+        displayName: normalizeFieldValue(identity.displayName),
+        avatarUrl: normalizeFieldValue(identity.avatarUrl),
+        clientId: selectedClientId,
+      };
+    } else {
+      currentDiscordIdentity = { clientId: selectedClientId };
+    }
+  } catch {
+    currentDiscordIdentity = { clientId: selectedClientId };
+  }
+
+  renderDiscordIdentity(currentDiscordIdentity);
+}
+
 async function refreshConnectedSessions() {
   try {
     const ids = await invoke("rpc_list_connected");
     els["connected-sessions"].textContent =
       ids.length > 0 ? ids.join(", ") : t("connected_sessions_none");
+    await refreshDiscordIdentityFromConnectedIds(ids);
     return ids;
   } catch {
     els["connected-sessions"].textContent = t("connected_sessions_none");
+    currentDiscordIdentity = null;
+    renderDiscordIdentity(null);
     return [];
   }
 }
@@ -975,6 +1125,7 @@ function applyTranslations() {
   refreshQuickSlots();
   setStatus(lastStatus.key, lastStatus.tone, lastStatus.raw);
   setUpdateStatus(lastUpdateState.key, lastUpdateState.tone, lastUpdateState.vars);
+  renderDiscordIdentity(currentDiscordIdentity);
   refreshConnectedSessions();
 }
 
@@ -1267,12 +1418,24 @@ function setStartupSourceFromUi() {
   setStatus("status_auto_apply_updated", "good");
 }
 
+function setThemeFromUi() {
+  const nextTheme =
+    els["theme-select"].value === "dark" ||
+    els["theme-select"].value === "light" ||
+    els["theme-select"].value === "auto"
+      ? els["theme-select"].value
+      : "auto";
+  localStorage.setItem(THEME_KEY, nextTheme);
+  applyThemePreference(nextTheme);
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   for (const id of [
     ...fieldIds,
     "profile-select",
     "profile-name",
     "lang-select",
+    "theme-select",
     "autostart-toggle",
     "auto-apply-toggle",
     "startup-source-select",
@@ -1306,6 +1469,19 @@ window.addEventListener("DOMContentLoaded", () => {
   els["check-updates"] = document.getElementById("check-updates-btn");
   els["download-update-link"] = document.getElementById("download-update-link");
   els["update-status"] = document.getElementById("update-status");
+  els["discord-identity-title"] = document.getElementById("discord-identity-title");
+  els["discord-identity-sub"] = document.getElementById("discord-identity-sub");
+  els["discord-avatar-img"] = document.getElementById("discord-avatar-img");
+  els["discord-avatar-fallback"] = document.getElementById("discord-avatar-fallback");
+
+  els["discord-avatar-img"].addEventListener("error", () => {
+    els["discord-avatar-img"].classList.add("hidden");
+    els["discord-avatar-img"].removeAttribute("src");
+    els["discord-avatar-img"].alt = "";
+    const fallbackInitial = getIdentityInitial(getDiscordIdentityName(currentDiscordIdentity));
+    els["discord-avatar-fallback"].textContent = fallbackInitial;
+    els["discord-avatar-fallback"].classList.remove("hidden");
+  });
 
   for (const id of fieldIds) {
     els[id].addEventListener("input", saveDraft);
@@ -1324,6 +1500,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
   currentLang = localStorage.getItem(LANG_KEY) === "sl" ? "sl" : "en";
   els["lang-select"].value = currentLang;
+  currentThemePreference = readThemePreference();
+  applyThemePreference(currentThemePreference);
+  initSystemThemeWatcher();
   els["auto-apply-toggle"].checked = readAutoApplyEnabled();
   els["startup-source-select"].value = readStartupSource();
 
@@ -1371,5 +1550,6 @@ window.addEventListener("DOMContentLoaded", () => {
   els["autostart-toggle"].addEventListener("change", () => run(setAutostartFromUi));
   els["auto-apply-toggle"].addEventListener("change", () => run(() => setAutoApplyFromUi()));
   els["startup-source-select"].addEventListener("change", () => run(() => setStartupSourceFromUi()));
+  els["theme-select"].addEventListener("change", () => setThemeFromUi());
   els["check-updates"].addEventListener("click", () => run(checkForUpdates));
 });

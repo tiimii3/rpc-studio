@@ -21,6 +21,14 @@
                 <option value="sl">SI</option>
               </select>
             </div>
+            <div class="theme-switch">
+              <label for="theme-select" data-i18n="theme_label">Theme</label>
+              <select id="theme-select">
+                <option value="auto" data-i18n="theme_auto">Auto</option>
+                <option value="dark" data-i18n="theme_dark">Dark</option>
+                <option value="light" data-i18n="theme_light">Light</option>
+              </select>
+            </div>
             <p class="version-line">
               <span data-i18n="version_label">Version</span>
               <span id="app-version">-</span>
@@ -33,6 +41,18 @@
           Set custom details, state, and image assets for your local Discord
           desktop session.
         </p>
+        <div class="discord-identity" aria-live="polite">
+          <img id="discord-avatar-img" class="discord-avatar hidden" alt="" />
+          <div id="discord-avatar-fallback" class="discord-avatar-fallback">D</div>
+          <div class="discord-identity-copy">
+            <p id="discord-identity-title" class="discord-identity-title">
+              Discord not connected
+            </p>
+            <p id="discord-identity-sub" class="discord-identity-sub">
+              Connect any Client ID to show current Discord profile.
+            </p>
+          </div>
+        </div>
       </section>
 
       <section class="card">
