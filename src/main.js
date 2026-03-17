@@ -483,16 +483,29 @@ async function autoReconnectTick() {
   reconnectInFlight = true;
   try {
     const connected = await invoke("rpc_list_connected");
-    const connectedSet = new Set(
-      Array.isArray(connected) ? connected.map((id) => String(id)) : [],
-    );
+    const connectedSet = new Set(Array.isArray(connected) ? connected.map(String) : []);
 
     let recovered = 0;
     for (const clientId of desiredClientIds) {
-      if (connectedSet.has(clientId)) continue;
+      const presence = lastPresenceByClientId.get(clientId) ?? null;
+
+      // Health probe for tracked sessions with presence:
+      // if this fails, we know the IPC connection is stale and must reconnect.
+      if (presence) {
+        try {
+          await invoke("rpc_set_presence", { clientId, presence });
+          continue;
+        } catch {
+          // reconnect below
+        }
+      } else if (connectedSet.has(clientId)) {
+        // If there is no tracked presence payload and the backend still reports
+        // this session as connected, do nothing on this tick.
+        continue;
+      }
+
       try {
         await invoke("rpc_connect", { clientId });
-        const presence = lastPresenceByClientId.get(clientId);
         if (presence) {
           await invoke("rpc_set_presence", { clientId, presence });
         }
