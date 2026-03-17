@@ -43,8 +43,30 @@
             <span data-i18n="autostart_label">Launch on system startup</span>
           </label>
         </div>
+        <div class="behavior-row">
+          <label class="toggle">
+            <input id="auto-apply-toggle" type="checkbox" />
+            <span data-i18n="auto_apply_label">Auto-apply on app launch</span>
+          </label>
+        </div>
+        <div class="behavior-row startup-row">
+          <label for="startup-source-select" data-i18n="auto_apply_source_label">
+            Startup source
+          </label>
+          <select id="startup-source-select">
+            <option value="last_profile" data-i18n="auto_apply_source_last">
+              Last active profile
+            </option>
+            <option value="slot_a" data-i18n="auto_apply_source_slot_a">Quick Slot A</option>
+            <option value="slot_b" data-i18n="auto_apply_source_slot_b">Quick Slot B</option>
+            <option value="slot_c" data-i18n="auto_apply_source_slot_c">Quick Slot C</option>
+          </select>
+        </div>
         <p class="hint" data-i18n="tray_hint">
           Closing the window with X keeps the app running in the tray/menu bar.
+        </p>
+        <p class="hint" data-i18n="auto_apply_hint">
+          On launch, app can auto-connect and apply your chosen startup profile.
         </p>
       </section>
 
@@ -98,6 +120,10 @@
           <button id="export-config-btn" class="ghost" data-i18n="export_config_btn">
             Export Config
           </button>
+          <button id="import-config-btn" class="ghost" data-i18n="import_config_btn">
+            Import Config
+          </button>
+          <input id="import-config-input" type="file" accept=".json,application/json" hidden />
         </div>
         <p class="hint" data-i18n="profiles_hint">
           Save and load your full RPC setup with one click.

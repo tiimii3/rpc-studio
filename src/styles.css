@@ -145,9 +145,22 @@ body {
 
 .profile-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) auto auto auto;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) repeat(5, minmax(92px, auto));
   gap: 8px;
   margin-top: 6px;
+}
+
+.startup-row {
+  display: grid;
+  grid-template-columns: minmax(130px, auto) minmax(180px, 320px);
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.startup-row label {
+  font-size: 12px;
+  color: #c7d5ef;
 }
 
 .slot-grid {
@@ -390,6 +403,10 @@ select {
 
   .slot-row button + button {
     margin-top: 6px;
+  }
+
+  .startup-row {
+    grid-template-columns: 1fr;
   }
 }
 
