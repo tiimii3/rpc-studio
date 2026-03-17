@@ -7,6 +7,7 @@ const LANG_KEY = "rpc-language";
 // Update these URLs if you publish from a different GitHub repository.
 const RELEASES_LATEST_API = "https://api.github.com/repos/tiimii3/rpc-studio/releases/latest";
 const RELEASES_PAGE = "https://github.com/tiimii3/rpc-studio/releases/latest";
+const AUTO_RECONNECT_MS = 10_000;
 
 const fieldIds = [
   "client-id",
@@ -116,6 +117,7 @@ const i18n = {
     status_slot_assigned: "Slot assigned.",
     status_slot_ran: "Slot started.",
     status_autostart_updated: "Startup setting updated.",
+    status_auto_reconnected: "Discord reconnected automatically.",
     err_client_id: "Enter Application Client ID.",
     err_timestamp: "Timestamp must be a number (unix seconds).",
     err_non_negative_hours: "Hours must be 0 or more.",
@@ -212,6 +214,7 @@ const i18n = {
     status_slot_assigned: "Slot dodeljen.",
     status_slot_ran: "Slot zagnan.",
     status_autostart_updated: "Nastavitev zagona posodobljena.",
+    status_auto_reconnected: "Discord je bil samodejno ponovno povezan.",
     err_client_id: "Vnesi Application Client ID.",
     err_timestamp: "Timestamp mora biti stevilka (unix sekunde).",
     err_non_negative_hours: "Ure morajo biti 0 ali vec.",
@@ -229,6 +232,10 @@ let currentLang = "en";
 let lastStatus = { key: "status_disconnected", tone: "neutral", raw: false };
 let lastUpdateState = { key: "update_idle", tone: "neutral", vars: {} };
 let currentAppVersion = null;
+const desiredClientIds = new Set();
+const lastPresenceByClientId = new Map();
+let reconnectTimer = null;
+let reconnectInFlight = false;
 
 function t(key) {
   return i18n[currentLang]?.[key] ?? i18n.en[key] ?? key;
@@ -428,6 +435,27 @@ function setUpdateStatus(key, tone = "neutral", vars = {}) {
   els["update-status"].dataset.tone = tone;
 }
 
+function trackReconnectSession(clientId, presence = null) {
+  const id = String(clientId ?? "").trim();
+  if (!id) return;
+  desiredClientIds.add(id);
+  if (presence && typeof presence === "object") {
+    lastPresenceByClientId.set(id, presence);
+  }
+}
+
+function untrackReconnectSession(clientId) {
+  const id = String(clientId ?? "").trim();
+  if (!id) return;
+  desiredClientIds.delete(id);
+  lastPresenceByClientId.delete(id);
+}
+
+function clearReconnectSessions() {
+  desiredClientIds.clear();
+  lastPresenceByClientId.clear();
+}
+
 function refreshQuickSlots() {
   const slots = readQuickSlots();
   for (const slot of ["a", "b", "c"]) {
@@ -443,9 +471,56 @@ async function refreshConnectedSessions() {
     const ids = await invoke("rpc_list_connected");
     els["connected-sessions"].textContent =
       ids.length > 0 ? ids.join(", ") : t("connected_sessions_none");
+    return ids;
   } catch {
     els["connected-sessions"].textContent = t("connected_sessions_none");
+    return [];
   }
+}
+
+async function autoReconnectTick() {
+  if (reconnectInFlight || desiredClientIds.size === 0) return;
+  reconnectInFlight = true;
+  try {
+    const connected = await invoke("rpc_list_connected");
+    const connectedSet = new Set(
+      Array.isArray(connected) ? connected.map((id) => String(id)) : [],
+    );
+
+    let recovered = 0;
+    for (const clientId of desiredClientIds) {
+      if (connectedSet.has(clientId)) continue;
+      try {
+        await invoke("rpc_connect", { clientId });
+        const presence = lastPresenceByClientId.get(clientId);
+        if (presence) {
+          await invoke("rpc_set_presence", { clientId, presence });
+        }
+        recovered += 1;
+      } catch {
+        // Keep retrying on next tick.
+      }
+    }
+
+    if (recovered > 0) {
+      await refreshConnectedSessions();
+      setStatus("status_auto_reconnected", "good");
+    }
+  } catch {
+    // Ignore periodic tick errors; next tick will retry.
+  } finally {
+    reconnectInFlight = false;
+  }
+}
+
+function startAutoReconnectLoop() {
+  if (reconnectTimer) clearInterval(reconnectTimer);
+  reconnectTimer = setInterval(() => {
+    void autoReconnectTick();
+  }, AUTO_RECONNECT_MS);
+  window.addEventListener("online", () => {
+    void autoReconnectTick();
+  });
 }
 
 async function loadAutostartState() {
@@ -532,6 +607,35 @@ function buildButton(labelId, urlId, defaultLabelKey) {
   return { label, url };
 }
 
+function buildPresenceFromForm() {
+  const largeButton = buildButton(
+    "large-image-link-label",
+    "large-image-link-url",
+    "default_large_button",
+  );
+  const smallButton = buildButton(
+    "small-image-link-label",
+    "small-image-link-url",
+    "default_small_button",
+  );
+
+  return {
+    activityType: text("activity-type") || "playing",
+    details: text("details") || null,
+    state: text("state") || null,
+    largeImageKey: text("large-image-key") || null,
+    largeImageText: text("large-image-text") || null,
+    smallImageKey: text("small-image-key") || null,
+    smallImageText: text("small-image-text") || null,
+    startTimestamp: buildStartTimestamp(),
+    endTimestamp: parseTimestamp(text("end-timestamp")),
+    button1Label: largeButton?.label ?? null,
+    button1Url: largeButton?.url ?? null,
+    button2Label: smallButton?.label ?? null,
+    button2Url: smallButton?.url ?? null,
+  };
+}
+
 function applyTranslations() {
   document.documentElement.lang = currentLang;
 
@@ -555,6 +659,7 @@ function applyTranslations() {
 async function connectRpc() {
   const clientId = requireClientId();
   await invoke("rpc_connect", { clientId });
+  trackReconnectSession(clientId);
   await refreshConnectedSessions();
   setStatus("status_connected", "good");
 }
@@ -562,12 +667,14 @@ async function connectRpc() {
 async function disconnectRpc() {
   const clientId = requireClientId();
   await invoke("rpc_disconnect", { clientId });
+  untrackReconnectSession(clientId);
   await refreshConnectedSessions();
   setStatus("status_disconnected", "neutral");
 }
 
 async function disconnectAllRpc() {
   await invoke("rpc_disconnect_all");
+  clearReconnectSessions();
   await refreshConnectedSessions();
   setStatus("status_disconnected_all", "neutral");
 }
@@ -579,35 +686,10 @@ async function setAutostartFromUi() {
 }
 
 async function applyPresence() {
-  const largeButton = buildButton(
-    "large-image-link-label",
-    "large-image-link-url",
-    "default_large_button",
-  );
-  const smallButton = buildButton(
-    "small-image-link-label",
-    "small-image-link-url",
-    "default_small_button",
-  );
-
-  const presence = {
-    activityType: text("activity-type") || "playing",
-    details: text("details") || null,
-    state: text("state") || null,
-    largeImageKey: text("large-image-key") || null,
-    largeImageText: text("large-image-text") || null,
-    smallImageKey: text("small-image-key") || null,
-    smallImageText: text("small-image-text") || null,
-    startTimestamp: buildStartTimestamp(),
-    endTimestamp: parseTimestamp(text("end-timestamp")),
-    button1Label: largeButton?.label ?? null,
-    button1Url: largeButton?.url ?? null,
-    button2Label: smallButton?.label ?? null,
-    button2Url: smallButton?.url ?? null,
-  };
-
+  const presence = buildPresenceFromForm();
   const clientId = requireClientId();
   await invoke("rpc_set_presence", { clientId, presence });
+  trackReconnectSession(clientId, presence);
   setStatus("status_presence_updated", "good");
 }
 
@@ -627,33 +709,9 @@ async function runProfileByName(name) {
   const clientId = requireClientId();
   await invoke("rpc_connect", { clientId });
 
-  const largeButton = buildButton(
-    "large-image-link-label",
-    "large-image-link-url",
-    "default_large_button",
-  );
-  const smallButton = buildButton(
-    "small-image-link-label",
-    "small-image-link-url",
-    "default_small_button",
-  );
-
-  const presence = {
-    activityType: text("activity-type") || "playing",
-    details: text("details") || null,
-    state: text("state") || null,
-    largeImageKey: text("large-image-key") || null,
-    largeImageText: text("large-image-text") || null,
-    smallImageKey: text("small-image-key") || null,
-    smallImageText: text("small-image-text") || null,
-    startTimestamp: buildStartTimestamp(),
-    endTimestamp: parseTimestamp(text("end-timestamp")),
-    button1Label: largeButton?.label ?? null,
-    button1Url: largeButton?.url ?? null,
-    button2Label: smallButton?.label ?? null,
-    button2Url: smallButton?.url ?? null,
-  };
+  const presence = buildPresenceFromForm();
   await invoke("rpc_set_presence", { clientId, presence });
+  trackReconnectSession(clientId, presence);
   await refreshConnectedSessions();
   saveDraft();
 }
@@ -834,6 +892,8 @@ window.addEventListener("DOMContentLoaded", () => {
   refreshConnectedSessions();
   loadAutostartState();
   loadAppVersion();
+  startAutoReconnectLoop();
+  void autoReconnectTick();
   hideUpdateDownload();
   setStatus("status_disconnected", "neutral");
   setUpdateStatus("update_idle", "neutral");
